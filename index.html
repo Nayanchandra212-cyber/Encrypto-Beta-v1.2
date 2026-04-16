@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encrypto Beta 1.2 | N-OS STRICT</title>
+<style>
+    :root { --accent: #ff0000; --bg: #000; --text: #fff; --dot: rgba(255,255,255,0.05); }
+    
+    body { 
+        background-color: var(--bg); 
+        background-image: radial-gradient(var(--dot) 1px, transparent 0);
+        background-size: 10px 10px;
+        color: var(--text); 
+        font-family: 'Courier New', monospace; 
+        margin: 0; padding: 20px; 
+        text-transform: uppercase;
+        overflow-x: hidden;
+        user-select: none; 
+    }
+
+    .container { max-width: 550px; margin: auto; border: 1px solid #222; padding: 25px; background: rgba(0,0,0,0.9); }
+    h1 { font-size: 1rem; border-bottom: 1px solid var(--accent); padding-bottom: 10px; letter-spacing: 2px; }
+    
+    textarea, input { 
+        width: 100%; background: #080808; border: 1px solid #333; 
+        color: var(--text); padding: 12px; margin: 10px 0; 
+        box-sizing: border-box; font-family: inherit; border-radius: 0;
+    }
+
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button { 
+        background: var(--text); color: var(--bg); border: none; 
+        padding: 15px; cursor: pointer; font-weight: bold; font-family: inherit;
+    }
+    button:hover { background: var(--accent); color: #fff; }
+
+    #v-kb { 
+        display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; 
+        background: #050505; padding: 10px; border: 1px solid #222; margin: 10px 0;
+    }
+    .key { background: #111; padding: 12px 0; text-align: center; cursor: pointer; font-size: 0.7rem; border: 1px solid #222; }
+    
+    .hidden { display: none !important; }
+    #boot-error { text-align: center; padding: 100px 20px; color: var(--accent); }
+    .recovery { border: 1px dashed var(--accent); padding: 20px; text-align: center; }
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="boot-gate" class="hidden">
+    <div class="container">
+        <h1>ENCRYPTO_BETA_1.2 [STRICT]</h1>
+        
+        <div id="ui-main">
+            <textarea id="itx" placeholder="[INPUT_SENSITIVE_DATA]" autocomplete="off" spellcheck="false"></textarea>
+            
+            <button onclick="document.getElementById('v-kb').classList.toggle('hidden')" style="width:100%; font-size:0.7rem;">ACCESS_INCOGNITO_KEYBOARD</button>
+            <div id="v-kb" class="hidden"></div>
+            
+            <input type="password" id="kix" placeholder="[MASTER_KEY]" autocomplete="new-password">
+            
+            <div class="btn-group">
+                <button onclick="engine('enc')">ENCRYPT</button>
+                <button onclick="engine('dec')">DECRYPT</button>
+            </div>
+
+            <textarea id="otx" placeholder="[ENCRYPTED_OUTPUT]" readonly></textarea>
+            
+            <div class="btn-group" style="margin-top:10px;">
+                <button onclick="kill('0x22')" style="background:var(--accent); color:#fff;">KILL_SWITCH</button>
+                <button onclick="exportData()" id="exBtn">EXPORT_VAULT</button>
+            </div>
+
+            <div style="font-size:0.6rem; margin-top:15px; color:#444;">
+                MEM_SCRAMBLE: ACTIVE | ENV: VERIFIED | VERSION: 1.2_BETA
+            </div>
+        </div>
+
+        <div id="recovery-ui" class="hidden recovery">
+            <h2>[!] RECOVERY_MODE</h2>
+            <p id="err-log">CODE: ERR_AUTH_FAIL_EXCEEDED</p>
+            <button onclick="kill('0x00')">SYSTEM_RESTART</button>
+        </div>
+    </div>
+</div>
+
+<div id="boot-error">
+    <h1>[!] REJECTED</h1>
+    <p>ERROR_0x88: ENVIRONMENT_UNSAFE</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script>
+    let failCount = 0;
+    const itx = document.getElementById('itx');
+    const kix = document.getElementById('kix');
+    const otx = document.getElementById('otx');
+
+    const ERR_MAP = {
+        "0x88": "UNSAFE_ENVIRONMENT_DETECTED",
+        "0x99": "BRUTE_FORCE_LOCKOUT",
+        "0x44": "ANTI_EXFILTRATION_TRIGGERED",
+        "0x22": "MANUAL_KILL_SWITCH_ACTIVATED",
+        "0x11": "IDLE_TIMEOUT_PURGE"
+    };
+
+    function scramble(str) {
+        return str.replace(/[a-zA-Z]/g, function(c) {
+            return String.fromCharCode((c <= 'Z' ? 90 : 122) - (c.charCodeAt(0) - (c <= 'Z' ? 65 : 97)));
+        });
+    }
+
+    window.onload = () => {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        if (!gl || navigator.doNotTrack !== "1") {
+            return; 
+        }
+        document.getElementById('boot-error').classList.add('hidden');
+        document.getElementById('boot-gate').classList.remove('hidden');
+        setupKB();
+    };
+
+    function setupKB() {
+        const layout = "QWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$".split("");
+        const kb = document.getElementById('v-kb');
+        layout.forEach(char => {
+            let b = document.createElement('div');
+            b.className = 'key'; b.innerText = char;
+            b.onclick = () => { kix.value += char; };
+            kb.appendChild(b);
+        });
+    }
+
+    function applyStrictLayers(text) {
+        const rand = Math.floor(Math.random() * 9) + 1;
+        const prefix = CryptoJS.lib.WordArray.random(rand).toString();
+        const suffix = CryptoJS.lib.WordArray.random(rand).toString();
+        const meta = (10 - rand).toString(); 
+        return meta + prefix + text + suffix;
+    }
+
+    function removeStrictLayers(text) {
+        const meta = parseInt(text.substring(0, 1));
+        const len = 10 - meta;
+        return text.substring(1 + (len * 2), text.length - (len * 2));
+    }
+
+    function engine(mode) {
+        const key = kix.value;
+        const data = itx.value;
+
+        if (key === "GUEST") {
+            otx.value = "ERROR_CODE: 0xDEAD_BEEF_SESSION_LOCKED";
+            return;
+        }
+
+        try {
+            if (mode === 'enc') {
+                const salted = applyStrictLayers(data);
+                const scrambled = scramble(salted);
+                otx.value = CryptoJS.AES.encrypt(scrambled, key).toString();
+            } else {
+                const dec = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8);
+                if (!dec) throw new Error();
+                const unscrambled = scramble(dec);
+                otx.value = removeStrictLayers(unscrambled);
+                failCount = 0;
+            }
+        } catch (e) {
+            failCount++;
+            if (failCount >= 5) {
+                showError("0x99");
+            }
+        }
+    }
+
+    function showError(code) {
+        const display = document.getElementById('err-log');
+        const message = ERR_MAP[code] || "UNDEFINED_SECURITY_FLAG";
+        document.getElementById('ui-main').classList.add('hidden');
+        document.getElementById('recovery-ui').classList.remove('hidden');
+        display.innerText = `CODE: ${code} | ${message}`;
+    }
+
+    document.onkeydown = (e) => {
+        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74))) {
+            kill('0x44'); return false;
+        }
+    };
+
+    window.onblur = () => { if(itx.value || kix.value) kill('0x11'); };
+
+    function kill(code) {
+        itx.value = "00000"; kix.value = "00000";
+        if (code === '0x00') {
+            window.location.reload();
+        } else {
+            window.location.replace("about:blank");
+        }
+    }
+
+    function exportData() {
+        if (itx.value || kix.value) return alert("SEC_ERR: CLEAR_INPUTS_BEFORE_EXPORT");
+        const blob = new Blob([otx.value], {type: "text/plain"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "encrypto_v12.txt";
+        a.click();
+    }
+
+    let idle;
+    window.onload = resetTimer;
+    window.onmousemove = resetTimer;
+    window.ontouchstart = resetTimer;
+    function resetTimer() {
+        clearTimeout(idle);
+        idle = setTimeout(() => kill('0x11'), 120000); 
+    }
+</script>
+</body>
+</html>
