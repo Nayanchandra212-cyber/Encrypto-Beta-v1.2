@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Encrypto Beta 1.2 | N-OS STRICT</title>
+<title>Encrypto Beta 1.2.1 | N-OS STRICT</title>
 <style>
     :root { --accent: #ff0000; --bg: #000; --text: #fff; --dot: rgba(255,255,255,0.05); }
     
@@ -16,7 +16,6 @@
         margin: 0; padding: 20px; 
         text-transform: uppercase;
         overflow-x: hidden;
-        user-select: none; 
     }
 
     .container { max-width: 550px; margin: auto; border: 1px solid #222; padding: 25px; background: rgba(0,0,0,0.9); }
@@ -50,7 +49,7 @@
 
 <div id="boot-gate" class="hidden">
     <div class="container">
-        <h1>ENCRYPTO_BETA_1.2 [STRICT]</h1>
+        <h1>ENCRYPTO_BETA_1.2.1 [STRICT]</h1>
         
         <div id="ui-main">
             <textarea id="itx" placeholder="[INPUT_SENSITIVE_DATA]" autocomplete="off" spellcheck="false"></textarea>
@@ -72,8 +71,9 @@
                 <button onclick="exportData()" id="exBtn">EXPORT_VAULT</button>
             </div>
 
-            <div style="font-size:0.6rem; margin-top:15px; color:#444;">
-                MEM_SCRAMBLE: ACTIVE | ENV: VERIFIED | VERSION: 1.2_BETA
+            <div style="font-size:0.55rem; margin-top:15px; color:#444; line-height: 1.4;">
+                MEM_SCRAMBLE: ACTIVE | ENV: VERIFIED | VERSION: 1.2.1_BETA<br>
+                CHANGELOG: +BYPASS_BTN, +REVERSE_SALT, +MEM_ATBASH
             </div>
         </div>
 
@@ -88,6 +88,11 @@
 <div id="boot-error">
     <h1>[!] REJECTED</h1>
     <p>ERROR_0x88: ENVIRONMENT_UNSAFE</p>
+    <p style="font-size: 0.7rem; color: #444; margin-bottom: 20px;">SYSTEM_DETECTED_NON_PRIVATE_SESSION</p>
+    
+    <button onclick="bypassCheck()" style="background: none; border: 1px solid #333; color: #666; padding: 10px 20px; font-size: 0.7rem;">
+        FORCE_BOOT_ANYWAY (BYPASS)
+    </button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -105,24 +110,32 @@
         "0x11": "IDLE_TIMEOUT_PURGE"
     };
 
+    // INTERNAL RAM SCRAMBLER
     function scramble(str) {
         return str.replace(/[a-zA-Z]/g, function(c) {
             return String.fromCharCode((c <= 'Z' ? 90 : 122) - (c.charCodeAt(0) - (c <= 'Z' ? 65 : 97)));
         });
     }
 
-    window.onload = () => {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl');
-        if (!gl || navigator.doNotTrack !== "1") {
-            return; 
-        }
+    // BYPASS LOGIC
+    function bypassCheck() {
         document.getElementById('boot-error').classList.add('hidden');
         document.getElementById('boot-gate').classList.remove('hidden');
         setupKB();
+    }
+
+    // BOOT LOGIC
+    window.onload = () => {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        // If everything is fine, boot normally
+        if (gl && navigator.doNotTrack === "1") {
+            bypassCheck();
+        }
     };
 
     function setupKB() {
+        if (document.getElementById('v-kb').children.length > 0) return;
         const layout = "QWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$".split("");
         const kb = document.getElementById('v-kb');
         layout.forEach(char => {
@@ -184,6 +197,7 @@
         display.innerText = `CODE: ${code} | ${message}`;
     }
 
+    // ANTI-EXFILTRATION
     document.onkeydown = (e) => {
         if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74))) {
             kill('0x44'); return false;
@@ -197,6 +211,7 @@
         if (code === '0x00') {
             window.location.reload();
         } else {
+            // Redirect to blank page for manual kills
             window.location.replace("about:blank");
         }
     }
@@ -206,18 +221,17 @@
         const blob = new Blob([otx.value], {type: "text/plain"});
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "encrypto_v12.txt";
+        a.download = "encrypto_v121.txt";
         a.click();
     }
 
     let idle;
-    window.onload = resetTimer;
-    window.onmousemove = resetTimer;
-    window.ontouchstart = resetTimer;
     function resetTimer() {
         clearTimeout(idle);
         idle = setTimeout(() => kill('0x11'), 120000); 
     }
+    window.onmousemove = resetTimer;
+    window.ontouchstart = resetTimer;
 </script>
 </body>
 </html>
