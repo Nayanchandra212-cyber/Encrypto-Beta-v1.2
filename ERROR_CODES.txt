@@ -1,0 +1,18 @@
+ENCRYPTO BETA v1.2 - INTERNAL ERROR REGISTRY
+
+[0x88] - UNSAFE_ENVIRONMENT: Boot rejected. The browser did not meet security 
+         requirements (e.g., DoNotTrack is OFF or no WebGL support).
+
+[0x99] - BRUTE_FORCE_LOCKOUT: User exceeded 5 incorrect password attempts. 
+         System has entered Recovery Mode.
+
+[0x44] - ANTI_EXFILTRATION: User attempted to open Developer Tools (F12/Inspect). 
+         Session was instantly killed.
+
+[0x22] - MANUAL_KILL: The user clicked the Red Kill Switch button. 
+         All memory was zeroed and the page redirected.
+
+[0x11] - IDLE_TIMEOUT: No activity detected for 120 seconds. 
+         Session purged for safety.
+
+[0x00] - SYSTEM_RESTART: Recovery Mode reset by user request.
