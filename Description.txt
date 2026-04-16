@@ -1,0 +1,20 @@
+# Encrypto Beta v1.2 [STRICT EDITION]
+
+**Original Site Concept by:** Omkar
+**Developed & Upgraded by:** Nayan Chandra
+
+Encrypto Beta v1.2 is an aggressive, high-security development of the original encryption tool. This version is designed to be a "Zero-Trust" environment, focusing on anti-forensics and data destruction if a breach is detected.
+
+## ⚠️ Experimental Status
+This version is in **Beta**. All security features (Memory Scrambler, Anti-Exfiltration, Environment Gatekeeper) are experimental and may behave differently depending on your browser's security settings.
+
+## Aggressive Features
+- **Incognito Virtual Keyboard**: Prevents system-level keylogging by using an internal HTML-based QWERTY layout.
+- **Memory Scrambler**: Internal RAM data is obfuscated using Atbash logic (A<->Z) to prevent memory scraping.
+- **Triple-Layer Lock**: Master Key + Dynamic Salt + Hidden Reverse Pepper logic.
+- **Kill Switch**: Instant session purge and redirect to `about:blank` if the user switches apps or enters Recovery Mode.
+- **Environment Gatekeeper**: Refuses to boot (Error 0x88) if the browser environment is not secure or private.
+
+## Contact & Bug Reports
+If you encounter a bug or a security bypass, do not open a public issue. Contact me privately at:
+📧 **nayanchandra789@proton.me**
