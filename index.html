@@ -52,12 +52,15 @@
         <h1>ENCRYPTO_BETA_1.2.1 [STRICT]</h1>
         
         <div id="ui-main">
-            <textarea id="itx" placeholder="[INPUT_SENSITIVE_DATA]" autocomplete="off" spellcheck="false"></textarea>
+            <textarea id="itx" placeholder="[INPUT_SENSITIVE_DATA]"></textarea>
             
-            <button onclick="document.getElementById('v-kb').classList.toggle('hidden')" style="width:100%; font-size:0.7rem;">ACCESS_INCOGNITO_KEYBOARD</button>
+            <button onclick="document.getElementById('v-kb').classList.toggle('hidden')" style="width:100%; font-size:0.7rem;">
+                ACCESS_INCOGNITO_KEYBOARD
+            </button>
+
             <div id="v-kb" class="hidden"></div>
             
-            <input type="password" id="kix" placeholder="[MASTER_KEY]" autocomplete="new-password">
+            <input type="password" id="kix" placeholder="[MASTER_KEY]">
             
             <div class="btn-group">
                 <button onclick="engine('enc')">ENCRYPT</button>
@@ -68,10 +71,10 @@
             
             <div class="btn-group" style="margin-top:10px;">
                 <button onclick="kill('0x22')" style="background:var(--accent); color:#fff;">KILL_SWITCH</button>
-                <button onclick="exportData()" id="exBtn">EXPORT_VAULT</button>
+                <button onclick="copyOutput()" id="exBtn">COPY_OUTPUT</button>
             </div>
 
-            <div style="font-size:0.55rem; margin-top:15px; color:#444; line-height: 1.4;">
+            <div style="font-size:0.55rem; margin-top:15px; color:#444;">
                 MEM_SCRAMBLE: ACTIVE | ENV: VERIFIED | VERSION: 1.2.1_BETA<br>
                 CHANGELOG: +BYPASS_BTN, +REVERSE_SALT, +MEM_ATBASH
             </div>
@@ -88,150 +91,98 @@
 <div id="boot-error">
     <h1>[!] REJECTED</h1>
     <p>ERROR_0x88: ENVIRONMENT_UNSAFE</p>
-    <p style="font-size: 0.7rem; color: #444; margin-bottom: 20px;">SYSTEM_DETECTED_NON_PRIVATE_SESSION</p>
-    
-    <button onclick="bypassCheck()" style="background: none; border: 1px solid #333; color: #666; padding: 10px 20px; font-size: 0.7rem;">
-        FORCE_BOOT_ANYWAY (BYPASS)
-    </button>
+    <button onclick="bypassCheck()">FORCE_BOOT_ANYWAY (BYPASS)</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
-    let failCount = 0;
-    const itx = document.getElementById('itx');
-    const kix = document.getElementById('kix');
-    const otx = document.getElementById('otx');
+let failCount = 0;
+const itx = document.getElementById('itx');
+const kix = document.getElementById('kix');
+const otx = document.getElementById('otx');
 
-    const ERR_MAP = {
-        "0x88": "UNSAFE_ENVIRONMENT_DETECTED",
-        "0x99": "BRUTE_FORCE_LOCKOUT",
-        "0x44": "ANTI_EXFILTRATION_TRIGGERED",
-        "0x22": "MANUAL_KILL_SWITCH_ACTIVATED",
-        "0x11": "IDLE_TIMEOUT_PURGE"
-    };
+function scramble(str) {
+    return str.replace(/[a-zA-Z]/g, c =>
+        String.fromCharCode((c <= 'Z' ? 90 : 122) - (c.charCodeAt(0) - (c <= 'Z' ? 65 : 97)))
+    );
+}
 
-    // INTERNAL RAM SCRAMBLER
-    function scramble(str) {
-        return str.replace(/[a-zA-Z]/g, function(c) {
-            return String.fromCharCode((c <= 'Z' ? 90 : 122) - (c.charCodeAt(0) - (c <= 'Z' ? 65 : 97)));
-        });
-    }
+function bypassCheck() {
+    document.getElementById('boot-error').classList.add('hidden');
+    document.getElementById('boot-gate').classList.remove('hidden');
+    setupKB();
+}
 
-    // BYPASS LOGIC
-    function bypassCheck() {
-        document.getElementById('boot-error').classList.add('hidden');
-        document.getElementById('boot-gate').classList.remove('hidden');
-        setupKB();
-    }
+window.onload = () => {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl');
+    if (gl && navigator.doNotTrack === "1") bypassCheck();
+};
 
-    // BOOT LOGIC
-    window.onload = () => {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl');
-        // If everything is fine, boot normally
-        if (gl && navigator.doNotTrack === "1") {
-            bypassCheck();
-        }
-    };
+function setupKB() {
+    if (document.getElementById('v-kb').children.length > 0) return;
+    const layout = "QWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$".split("");
+    const kb = document.getElementById('v-kb');
+    layout.forEach(char => {
+        let b = document.createElement('div');
+        b.className = 'key';
+        b.innerText = char;
+        b.onclick = () => { kix.value += char; };
+        kb.appendChild(b);
+    });
+}
 
-    function setupKB() {
-        if (document.getElementById('v-kb').children.length > 0) return;
-        const layout = "QWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$".split("");
-        const kb = document.getElementById('v-kb');
-        layout.forEach(char => {
-            let b = document.createElement('div');
-            b.className = 'key'; b.innerText = char;
-            b.onclick = () => { kix.value += char; };
-            kb.appendChild(b);
-        });
-    }
+function applyStrictLayers(text) {
+    const rand = Math.floor(Math.random() * 9) + 1;
+    const prefix = CryptoJS.lib.WordArray.random(rand).toString();
+    const suffix = CryptoJS.lib.WordArray.random(rand).toString();
+    const meta = (10 - rand).toString(); 
+    return meta + prefix + text + suffix;
+}
 
-    function applyStrictLayers(text) {
-        const rand = Math.floor(Math.random() * 9) + 1;
-        const prefix = CryptoJS.lib.WordArray.random(rand).toString();
-        const suffix = CryptoJS.lib.WordArray.random(rand).toString();
-        const meta = (10 - rand).toString(); 
-        return meta + prefix + text + suffix;
-    }
+function removeStrictLayers(text) {
+    const meta = parseInt(text.substring(0, 1));
+    const len = 10 - meta;
+    return text.substring(1 + (len * 2), text.length - (len * 2));
+}
 
-    function removeStrictLayers(text) {
-        const meta = parseInt(text.substring(0, 1));
-        const len = 10 - meta;
-        return text.substring(1 + (len * 2), text.length - (len * 2));
-    }
+function engine(mode) {
+    const key = kix.value;
+    const data = itx.value;
 
-    function engine(mode) {
-        const key = kix.value;
-        const data = itx.value;
-
-        if (key === "GUEST") {
-            otx.value = "ERROR_CODE: 0xDEAD_BEEF_SESSION_LOCKED";
-            return;
-        }
-
-        try {
-            if (mode === 'enc') {
-                const salted = applyStrictLayers(data);
-                const scrambled = scramble(salted);
-                otx.value = CryptoJS.AES.encrypt(scrambled, key).toString();
-            } else {
-                const dec = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8);
-                if (!dec) throw new Error();
-                const unscrambled = scramble(dec);
-                otx.value = removeStrictLayers(unscrambled);
-                failCount = 0;
-            }
-        } catch (e) {
-            failCount++;
-            if (failCount >= 5) {
-                showError("0x99");
-            }
-        }
-    }
-
-    function showError(code) {
-        const display = document.getElementById('err-log');
-        const message = ERR_MAP[code] || "UNDEFINED_SECURITY_FLAG";
-        document.getElementById('ui-main').classList.add('hidden');
-        document.getElementById('recovery-ui').classList.remove('hidden');
-        display.innerText = `CODE: ${code} | ${message}`;
-    }
-
-    // ANTI-EXFILTRATION
-    document.onkeydown = (e) => {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74))) {
-            kill('0x44'); return false;
-        }
-    };
-
-    window.onblur = () => { if(itx.value || kix.value) kill('0x11'); };
-
-    function kill(code) {
-        itx.value = "00000"; kix.value = "00000";
-        if (code === '0x00') {
-            window.location.reload();
+    try {
+        if (mode === 'enc') {
+            const salted = applyStrictLayers(data);
+            const scrambled = scramble(salted);
+            otx.value = CryptoJS.AES.encrypt(scrambled, key).toString();
         } else {
-            // Redirect to blank page for manual kills
-            window.location.replace("about:blank");
+            const dec = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8);
+            if (!dec) throw new Error();
+            const unscrambled = scramble(dec);
+            otx.value = removeStrictLayers(unscrambled);
         }
+    } catch {
+        failCount++;
+        if (failCount >= 5) alert("LOCKED OUT");
     }
+}
 
-    function exportData() {
-        if (itx.value || kix.value) return alert("SEC_ERR: CLEAR_INPUTS_BEFORE_EXPORT");
-        const blob = new Blob([otx.value], {type: "text/plain"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "encrypto_v121.txt";
-        a.click();
-    }
+function copyOutput() {
+    if (!otx.value) return alert("SEC_ERR: NO_OUTPUT_TO_COPY");
 
-    let idle;
-    function resetTimer() {
-        clearTimeout(idle);
-        idle = setTimeout(() => kill('0x11'), 120000); 
-    }
-    window.onmousemove = resetTimer;
-    window.ontouchstart = resetTimer;
+    navigator.clipboard.writeText(otx.value).then(() => {
+        alert("OUTPUT COPIED\n\nRemember the Key you have used or else you would not be able to Decrypt your Encrypted Message.");
+    }).catch(() => {
+        alert("SEC_ERR: COPY_FAILED");
+    });
+}
+
+function kill(code) {
+    itx.value = "00000"; 
+    kix.value = "00000";
+    if (code === '0x00') location.reload();
+    else location.replace("about:blank");
+}
 </script>
 </body>
 </html>
